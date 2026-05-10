@@ -18,3 +18,22 @@ clean.
 - GitHub release assets
 - tap-facing release metadata
 
+## Releases
+
+### v0.9.5
+
+The `releases/0.9.5/` directory contains signed multi-platform Loctree bundles
+that include the `loctree-mcp` binary:
+
+- `aarch64-apple-darwin`
+- `aarch64-unknown-linux-gnu`
+- `x86_64-unknown-linux-gnu`
+
+Each tarball is tracked with Git LFS and is accompanied by:
+
+- `.sha256` sidecar checksum
+- `.sig` detached GPG signature
+- `SHA256SUMS` aggregate checksum file
+- `manifest.json` release manifest
+
+The public signing key is stored as `loctree-signing.asc`.
