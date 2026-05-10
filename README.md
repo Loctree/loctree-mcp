@@ -1,16 +1,16 @@
-# loctree-mcp
+# loctree release assets
 
-Thin release repo for the Loctree MCP server.
+Release assets for the Loctree CLI and MCP server.
 
-This repo is release-only. The implementation lives in `Loctree/Loctree`, and
-this repository exists to publish MCP binaries and keep the install channel
-clean.
+The implementation lives in the Loctree source tree. Public GitHub release
+assets are published through `Loctree/loctree`, keeping Loctree and AICX release
+channels separate.
 
 ## Role
 
-- receives MCP release assets from the monorepo publish pipeline
-- exposes the install surface for `brew install loctree/mcp/loctree-mcp`
-- keeps MCP distribution separate from source and docs
+- receives release assets from the monorepo publish pipeline
+- exposes the install surface for Loctree binaries
+- keeps Loctree distribution separate from AICX release artifacts
 
 ## Contents
 
@@ -21,7 +21,7 @@ clean.
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Loctree/loctree-mcp/main/install.sh | bash
+curl -fsSL https://github.com/Loctree/loctree/releases/download/v0.9.5/install.sh | bash
 ```
 
 The installer defaults to `~/.local/bin`, so it does not need `sudo`.
@@ -33,8 +33,6 @@ Installed binaries:
 - `loct`
 - `loctree`
 - `loctree-mcp`
-- `aicx`
-- `aicx-mcp`
 
 The installer verifies SHA256 checksums and verifies detached GPG signatures
 when `gpg` is available.

@@ -6,14 +6,12 @@
     {
       "target": "aarch64-apple-darwin",
       "url": "https://loct.io/releases/0.9.5/loctree-0.9.5-aarch64-apple-darwin.tar.gz",
-      "sha256": "108969e429acf68419abb05d0603bb320b0488f420536eff2a2ef5847ff1b071",
-      "size_bytes": 102975113,
+      "sha256": "00ea56caf29954023737e32348e008b35252cc78a7a8e28536126470c9cfff26",
+      "size_bytes": 24827658,
       "binaries": [
         "loct",
         "loctree",
-        "loctree-mcp",
-        "aicx",
-        "aicx-mcp"
+        "loctree-mcp"
       ],
       "signature_url": "https://loct.io/releases/0.9.5/loctree-0.9.5-aarch64-apple-darwin.tar.gz.sig",
       "signature_type": "gpg-detached"
@@ -21,14 +19,12 @@
     {
       "target": "x86_64-unknown-linux-gnu",
       "url": "https://loct.io/releases/0.9.5/loctree-0.9.5-x86_64-unknown-linux-gnu.tar.gz",
-      "sha256": "8d8603b80eae6e93fc804a0da79c78d0b5652380c64943ad91e2b916699a8708",
-      "size_bytes": 118626832,
+      "sha256": "f2c01cb798085b0383473c3e06a34d8016a94cb8a326af8c8e0adba2e57847bd",
+      "size_bytes": 27903542,
       "binaries": [
         "loct",
         "loctree",
-        "loctree-mcp",
-        "aicx",
-        "aicx-mcp"
+        "loctree-mcp"
       ],
       "signature_url": "https://loct.io/releases/0.9.5/loctree-0.9.5-x86_64-unknown-linux-gnu.tar.gz.sig",
       "signature_type": "gpg-detached"
@@ -36,32 +32,18 @@
     {
       "target": "aarch64-unknown-linux-gnu",
       "url": "https://loct.io/releases/0.9.5/loctree-0.9.5-aarch64-unknown-linux-gnu.tar.gz",
-      "sha256": "9aafc7dcbd2f3721737e1ac0f1a1d0a26debcc00db444b1ab134292799cfbdbe",
-      "size_bytes": 109584941,
+      "sha256": "b2fa8e20aadf157a65e262faad5abcd0f94e7e62c823564d6c731f10ab704a5e",
+      "size_bytes": 26090714,
       "binaries": [
         "loct",
         "loctree",
-        "loctree-mcp",
-        "aicx",
-        "aicx-mcp"
+        "loctree-mcp"
       ],
       "signature_url": "https://loct.io/releases/0.9.5/loctree-0.9.5-aarch64-unknown-linux-gnu.tar.gz.sig",
       "signature_type": "gpg-detached"
     }
   ],
   "components": [
-    {
-      "name": "aicx",
-      "version": "0.6.5",
-      "source": "Loctree/aicx",
-      "release_tag": "v0.6.5"
-    },
-    {
-      "name": "aicx-mcp",
-      "version": "0.6.5",
-      "source": "Loctree/aicx",
-      "release_tag": "v0.6.5"
-    },
     {
       "name": "loct",
       "version": "0.9.5",

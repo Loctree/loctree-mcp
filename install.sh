@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${LOCTREE_RELEASE_REPO:-Loctree/loctree-mcp}"
+REPO="${LOCTREE_RELEASE_REPO:-Loctree/loctree}"
 VERSION="${LOCTREE_VERSION:-0.9.5}"
 INSTALL_DIR="${LOCTREE_INSTALL_DIR:-$HOME/.local/bin}"
-INSTALL_BINS="${LOCTREE_INSTALL_BINS:-loct loctree loctree-mcp aicx aicx-mcp}"
+INSTALL_BINS="${LOCTREE_INSTALL_BINS:-loct loctree loctree-mcp}"
 TMP_DIR=""
 
 cleanup() {
