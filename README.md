@@ -18,6 +18,27 @@ clean.
 - GitHub release assets
 - tap-facing release metadata
 
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Loctree/loctree-mcp/main/install.sh | bash
+```
+
+The installer defaults to `~/.local/bin`, so it does not need `sudo`.
+Use `LOCTREE_INSTALL_DIR=/usr/local/bin` only when you intentionally want a
+system-wide install and have write access to that directory.
+
+Installed binaries:
+
+- `loct`
+- `loctree`
+- `loctree-mcp`
+- `aicx`
+- `aicx-mcp`
+
+The installer verifies SHA256 checksums and verifies detached GPG signatures
+when `gpg` is available.
+
 ## Releases
 
 ### v0.9.5
