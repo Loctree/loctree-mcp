@@ -456,7 +456,7 @@ fn hex_encode(bytes: &[u8]) -> String {
 }
 
 fn hex_decode(input: &str) -> Result<Vec<u8>, ContextPackError> {
-    if input.len() % 2 != 0 {
+    if !input.len().is_multiple_of(2) {
         return Err(ContextPackError::BadRequest(
             "cursor payload is not valid hex".to_string(),
         ));

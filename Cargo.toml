@@ -5,9 +5,9 @@ members = [
 ]
 
 [workspace.package]
-version = "0.13.0"
+version = "0.13.1"
 edition = "2024"
-rust-version = "1.85.0"
+rust-version = "1.91.1"
 license = "BUSL-1.1"
 authors = ["Loctree <loct@loct.io>"]
 
@@ -34,6 +34,7 @@ shellexpand = "3.1"
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls-native-roots"] }
 sha2 = "0.10"
 schemars = "1"
-loctree = "0.13.0"
-loctree-ast = "0.13.0"
-report-leptos = "0.13.0"
+aicx = { version = "0.10.0", default-features = false, features = ["loctree-consumer"] }
+loctree = "0.13.1"
+loctree-ast = "0.13.1"
+report-leptos = "0.13.1"

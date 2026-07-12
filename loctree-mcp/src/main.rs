@@ -3473,9 +3473,12 @@ impl LoctreeServer {
 const BUILD_VERSION: &str = env!("LOCTREE_MCP_BUILD_VERSION");
 /// Richer human-facing commit stamp: `git describe --always --dirty --tags`.
 const GIT_DESCRIBE: &str = env!("LOCTREE_MCP_GIT_DESCRIBE");
+const TOOL_SURFACE_DIGEST: &str =
+    "TOOLS: context,repo-view,focus,slice,find,impact,tree,follow,suppressions,prism";
 
 /// The tool catalogue half of the `initialize` instructions. The build-identity
-/// header is prepended at runtime in [`LoctreeServer::get_info`].
+/// header and compact surface digest are prepended at runtime in
+/// [`LoctreeServer::get_info`].
 const INSTRUCTIONS_BODY: &str = "Loctree MCP provides one sharp agent surface: 10 tools, not a mirrored CLI.\n\n\
                  START:\n\
                  - context(project, format?) - Complete Agent Context Pack: structural + runtime semantics + risk + action + optional AICX memory + authority labels. Pretty JSON by default; use format='markdown' for operator-readable context.\n\n\
@@ -3523,7 +3526,11 @@ impl ServerHandler for LoctreeServer {
                     .with_description("Structural code intelligence for AI agents")
                     .with_website_url("https://github.com/Loctree/Loctree"),
             )
-            .with_instructions(format!("{}{INSTRUCTIONS_BODY}", build_identity_banner()))
+            .with_instructions(format!(
+                "{}{}\n\n{INSTRUCTIONS_BODY}",
+                build_identity_banner(),
+                TOOL_SURFACE_DIGEST
+            ))
     }
 }
 
@@ -3661,6 +3668,11 @@ mod tests {
         assert!(
             instructions.contains("STALE"),
             "banner must warn that a lagging binary is stale"
+        );
+        assert_eq!(
+            instructions.lines().nth(2),
+            Some(TOOL_SURFACE_DIGEST),
+            "compact tool digest should sit immediately after the build banner"
         );
         // The original tool catalogue must survive the prepend.
         assert!(
@@ -4509,14 +4521,14 @@ pub fn public_entry() {
         let mut expected_json =
             serde_json::to_value(&expected).expect("serialize expected OccurrenceResults");
         // Align scope/coverage fields to the actual MCP run's project context to assert parity on occurrences.
-        if let Some(obj) = expected_json.as_object_mut() {
-            if let Some(real_obj) = value["literal_matches"].as_object() {
-                if let Some(cov) = real_obj.get("coverage_line") {
-                    obj.insert("coverage_line".to_string(), cov.clone());
-                }
-                if let Some(scope) = real_obj.get("scope") {
-                    obj.insert("scope".to_string(), scope.clone());
-                }
+        if let Some(obj) = expected_json.as_object_mut()
+            && let Some(real_obj) = value["literal_matches"].as_object()
+        {
+            if let Some(cov) = real_obj.get("coverage_line") {
+                obj.insert("coverage_line".to_string(), cov.clone());
+            }
+            if let Some(scope) = real_obj.get("scope") {
+                obj.insert("scope".to_string(), scope.clone());
             }
         }
         assert_eq!(
