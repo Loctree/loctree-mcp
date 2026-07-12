@@ -22,6 +22,8 @@ const EXPECTED_TOOLS: &[&str] = &[
     "suppressions",
     "prism",
 ];
+const TOOL_SURFACE_DIGEST: &str =
+    "TOOLS: context,repo-view,focus,slice,find,impact,tree,follow,suppressions,prism";
 
 const MCP_RESPONSE_BUDGET_CHARS: usize = 38_000;
 const MCP_RESPONSE_BUDGET_PROTOCOL: &str = "loctree.mcp.response_budget.v1";
@@ -31,6 +33,7 @@ fn instructions_and_stdio_tools_list_are_bidirectionally_equal() {
     let mut server = StdioServer::start();
 
     let init = server.initialize();
+    assert_compact_tool_digest(&init);
     let advertised = advertised_tool_names(&init);
     let callable = server.tools_list();
 
@@ -51,6 +54,7 @@ fn http_tools_list_matches_stdio_contract() {
     let server = HttpServer::start();
 
     let initialized = server.initialize();
+    assert_compact_tool_digest(&initialized.init);
     let advertised = advertised_tool_names(&initialized.init);
     let callable = initialized.tools_list();
 
@@ -204,6 +208,22 @@ fn advertised_tool_names(init_response: &Value) -> BTreeSet<String> {
     }
 
     names
+}
+
+fn assert_compact_tool_digest(init_response: &Value) {
+    let instructions = init_response["result"]["instructions"]
+        .as_str()
+        .expect("initialize response includes instructions");
+    let digest_position = instructions
+        .find(TOOL_SURFACE_DIGEST)
+        .expect("instructions include compact tool digest");
+    let start_position = instructions
+        .find("START:")
+        .expect("instructions include detailed start section");
+    assert!(
+        digest_position < start_position,
+        "compact tool digest should precede the detailed catalogue"
+    );
 }
 
 fn assert_budgeted_tool_text(tool: &str, text: &str) {

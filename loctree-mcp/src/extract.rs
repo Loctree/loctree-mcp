@@ -7,10 +7,10 @@ pub fn extract_symbol(context: &str) -> &str {
         Regex::new(r"(?:async\s+)?(?:pub(?:\([^)]*\))?\s+)?fn\s+(\w+)\s*[<(]").unwrap()
     });
 
-    if let Some(captures) = re.captures(context) {
-        if let Some(m) = captures.get(1) {
-            return m.as_str();
-        }
+    if let Some(captures) = re.captures(context)
+        && let Some(m) = captures.get(1)
+    {
+        return m.as_str();
     }
 
     context

@@ -1,11 +1,11 @@
 # Component Sync Manifest
 
 - Component: `mcp`
-- Version: `0.13.0`
+- Version: `0.13.1`
 - Target repo: `Loctree/loctree-mcp`
-- Source commit: `a38afb8aba01`
-- Generated at: `2026-07-05T21:07:00Z`
-- Push mode: `enabled`
+- Source commit: `53cf52c1728b`
+- Generated at: `2026-07-12T05:17:35Z`
+- Push mode: `disabled`
 - Dependency mode: `crates.io registry`
 
 ## Included Payload
