@@ -15,15 +15,17 @@ const EXPECTED_TOOLS: &[&str] = &[
     "repo-view",
     "focus",
     "slice",
+    "body",
     "find",
     "impact",
+    "diff",
     "tree",
     "follow",
     "suppressions",
     "prism",
 ];
 const TOOL_SURFACE_DIGEST: &str =
-    "TOOLS: context,repo-view,focus,slice,find,impact,tree,follow,suppressions,prism";
+    "TOOLS: context,repo-view,focus,slice,body,find,impact,diff,tree,follow,suppressions,prism";
 
 const MCP_RESPONSE_BUDGET_CHARS: usize = 38_000;
 const MCP_RESPONSE_BUDGET_PROTOCOL: &str = "loctree.mcp.response_budget.v1";
@@ -96,11 +98,223 @@ fn find_literal_roundtrips_through_stdio_server() {
     assert_eq!(body["mode"], "literal");
     assert_eq!(body["query"], "needle_literal_marker");
     assert_eq!(body["literal_matches"]["total"], 1);
+    assert_eq!(
+        body["matches"], body["literal_matches"],
+        "matches must alias literal_matches exactly"
+    );
     assert_eq!(body["literal_matches"]["files_matched"], 1);
     assert_eq!(
         body["literal_matches"]["by_file"][0]["file"], "src/lib.rs",
         "literal result should point at the fixture source file"
     );
+}
+
+#[test]
+fn find_regex_and_body_roundtrip_through_stdio_server() {
+    let project = sample_project();
+    let mut server = StdioServer::start();
+    server.initialize();
+    server.initialized();
+
+    let regex_result = server.request(
+        2,
+        "tools/call",
+        json!({
+            "name": "find",
+            "arguments": {
+                "project": project.path().to_string_lossy(),
+                "force_no_git": true,
+                "name": "needle_[a-z]+_marker",
+                "mode": "regex"
+            }
+        }),
+    );
+    let regex_text = regex_result["result"]["content"][0]["text"]
+        .as_str()
+        .expect("regex result text");
+    let regex_body: Value = serde_json::from_str(regex_text).expect("regex result JSON");
+    assert_eq!(regex_body["mode"], "regex");
+    assert_eq!(
+        regex_body["matches"], regex_body["regex_matches"],
+        "matches must alias regex_matches exactly"
+    );
+    assert_eq!(regex_body["regex_matches"]["total"], 1);
+    assert!(
+        regex_body["regex_matches"]["coverage_line"]
+            .as_str()
+            .is_some_and(|line| line.contains("scanned"))
+    );
+
+    let body_result = server.request(
+        3,
+        "tools/call",
+        json!({
+            "name": "body",
+            "arguments": {
+                "project": project.path().to_string_lossy(),
+                "force_no_git": true,
+                "symbol": "marker"
+            }
+        }),
+    );
+    let body_text = body_result["result"]["content"][0]["text"]
+        .as_str()
+        .expect("body result text");
+    let body: Value = serde_json::from_str(body_text).expect("body result JSON");
+    assert_eq!(body["total"], 1);
+    assert_eq!(body["result"]["bodies"][0]["file"], "src/lib.rs");
+    assert!(
+        body["result"]["bodies"][0]["source"]
+            .as_str()
+            .is_some_and(|source| source.contains("pub fn marker")),
+        "body should return the defining source: {body}"
+    );
+}
+
+#[test]
+fn diff_accepts_git_refs_and_sees_live_worktree_exports() {
+    let project = sample_project();
+    commit_project(project.path());
+    fs::write(
+        project.path().join("src/lib.rs"),
+        "pub fn marker() -> &'static str { \"needle_literal_marker\" }\npub fn added_after_head() {}\n",
+    )
+    .expect("modify lib.rs");
+
+    let mut server = StdioServer::start();
+    server.initialize();
+    server.initialized();
+    let result = server.request(
+        2,
+        "tools/call",
+        json!({
+            "name": "diff",
+            "arguments": {
+                "project": project.path().to_string_lossy(),
+                "since": "HEAD"
+            }
+        }),
+    );
+    let text = result["result"]["content"][0]["text"]
+        .as_str()
+        .expect("diff result text");
+    let body: Value = serde_json::from_str(text).expect("diff result JSON");
+    assert_eq!(body["since"], "HEAD");
+    assert!(
+        body["diff"]["exports"]["added"]
+            .as_array()
+            .is_some_and(|exports| exports
+                .iter()
+                .any(|item| item["name"] == "added_after_head")),
+        "diff should include the dirty-worktree export: {body}"
+    );
+}
+
+#[test]
+fn existing_tools_match_cli_depth_and_filter_controls() {
+    let project = sample_project();
+    fs::create_dir_all(project.path().join("src/nested/deep")).expect("nested fixture dir");
+    fs::write(
+        project.path().join("src/nested/deep/helper.rs"),
+        "pub fn nested_helper() {}\n",
+    )
+    .expect("nested fixture file");
+
+    let mut server = StdioServer::start();
+    server.initialize();
+    server.initialized();
+
+    let tree_result = server.request(
+        2,
+        "tools/call",
+        json!({
+            "name": "tree",
+            "arguments": {
+                "project": project.path().to_string_lossy(),
+                "force_no_git": true,
+                "files": true,
+                "match": "nested/.+helper\\.rs$"
+            }
+        }),
+    );
+    let tree: Value = serde_json::from_str(
+        tree_result["result"]["content"][0]["text"]
+            .as_str()
+            .expect("tree result text"),
+    )
+    .expect("tree result JSON");
+    assert!(
+        tree["depth"].is_null(),
+        "omitted tree depth must be unlimited"
+    );
+    assert_eq!(tree["files"].as_array().map(Vec::len), Some(1));
+    assert_eq!(tree["files"][0]["path"], "src/nested/deep/helper.rs");
+
+    let slice_result = server.request(
+        3,
+        "tools/call",
+        json!({
+            "name": "slice",
+            "arguments": {
+                "project": project.path().to_string_lossy(),
+                "force_no_git": true,
+                "file": "src/lib.rs",
+                "depth": 1,
+                "rescan": true
+            }
+        }),
+    );
+    let slice: Value = serde_json::from_str(
+        slice_result["result"]["content"][0]["text"]
+            .as_str()
+            .expect("slice result text"),
+    )
+    .expect("slice result JSON");
+    assert_eq!(slice["depth"], 1);
+
+    let impact_result = server.request(
+        4,
+        "tools/call",
+        json!({
+            "name": "impact",
+            "arguments": {
+                "project": project.path().to_string_lossy(),
+                "force_no_git": true,
+                "file": "src/lib.rs",
+                "depth": 1
+            }
+        }),
+    );
+    let impact: Value = serde_json::from_str(
+        impact_result["result"]["content"][0]["text"]
+            .as_str()
+            .expect("impact result text"),
+    )
+    .expect("impact result JSON");
+    assert_eq!(impact["depth"], 1);
+
+    let focus_result = server.request(
+        5,
+        "tools/call",
+        json!({
+            "name": "focus",
+            "arguments": {
+                "project": project.path().to_string_lossy(),
+                "force_no_git": true,
+                "directory": "src",
+                "depth": 1,
+                "no_consumers": true
+            }
+        }),
+    );
+    let focus: Value = serde_json::from_str(
+        focus_result["result"]["content"][0]["text"]
+            .as_str()
+            .expect("focus result text"),
+    )
+    .expect("focus result JSON");
+    assert_eq!(focus["depth"], 1);
+    assert_eq!(focus["consumers_included"], false);
 }
 
 #[test]
@@ -134,12 +348,20 @@ fn tool_budget_contract_keeps_all_stdio_tool_outputs_under_default_budget() {
             json!({ "project": project_path, "force_no_git": true, "file": "src/lib.rs", "consumers": true }),
         ),
         (
+            "body",
+            json!({ "project": project_path, "force_no_git": true, "symbol": "needle_literal_marker" }),
+        ),
+        (
             "find",
             json!({ "project": project_path, "force_no_git": true, "name": "fat_symbol", "mode": "symbols", "limit": 1000 }),
         ),
         (
             "impact",
             json!({ "project": project_path, "force_no_git": true, "file": "src/lib.rs" }),
+        ),
+        (
+            "diff",
+            json!({ "project": project_path, "force_no_git": true, "since": "HEAD" }),
         ),
         (
             "tree",
@@ -263,6 +485,12 @@ fn tool_names(value: &Value) -> BTreeSet<String> {
 
 fn sample_project() -> TempDir {
     let tmp = TempDir::new().expect("temp dir");
+    // The scan guard refuses roots outside a git checkout.
+    std::process::Command::new("git")
+        .args(["init", "-q"])
+        .current_dir(tmp.path())
+        .status()
+        .expect("git init sample project");
     fs::write(
         tmp.path().join("Cargo.toml"),
         "[package]\nname = \"tool-surface-fixture\"\nversion = \"0.1.0\"\nedition = \"2024\"\n",
@@ -275,6 +503,22 @@ fn sample_project() -> TempDir {
     )
     .expect("write lib.rs");
     tmp
+}
+
+fn commit_project(path: &std::path::Path) {
+    for args in [
+        vec!["config", "user.email", "tool-surface@example.invalid"],
+        vec!["config", "user.name", "Tool Surface"],
+        vec!["add", "."],
+        vec!["commit", "-qm", "fixture base"],
+    ] {
+        let status = Command::new("git")
+            .args(&args)
+            .current_dir(path)
+            .status()
+            .unwrap_or_else(|_| panic!("git {args:?}"));
+        assert!(status.success(), "git {args:?} failed");
+    }
 }
 
 fn fat_project() -> TempDir {
@@ -320,12 +564,18 @@ struct StdioServer {
     child: Child,
     stdin: ChildStdin,
     stdout: BufReader<std::process::ChildStdout>,
+    _cache_dir: Option<tempfile::TempDir>,
 }
 
 impl StdioServer {
     fn start() -> Self {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_loctree-mcp"))
-            .args(["--log-level", "error"])
+        let temp = tempfile::tempdir().ok();
+        let mut cmd = Command::new(env!("CARGO_BIN_EXE_loctree-mcp"));
+        cmd.args(["--log-level", "error"]);
+        if let Some(ref t) = temp {
+            cmd.env("LOCT_CACHE_DIR", t.path().join("cache"));
+        }
+        let mut child = cmd
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -337,6 +587,7 @@ impl StdioServer {
             child,
             stdin,
             stdout,
+            _cache_dir: temp,
         }
     }
 
@@ -411,19 +662,25 @@ struct HttpServer {
     child: Child,
     addr: SocketAddr,
     session_id: String,
+    _cache_dir: Option<tempfile::TempDir>,
 }
 
 impl HttpServer {
     fn start() -> Self {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_loctree-mcp"))
-            .args([
-                "--transport",
-                "http",
-                "--bind",
-                "127.0.0.1:0",
-                "--log-level",
-                "error",
-            ])
+        let temp = tempfile::tempdir().ok();
+        let mut cmd = Command::new(env!("CARGO_BIN_EXE_loctree-mcp"));
+        cmd.args([
+            "--transport",
+            "http",
+            "--bind",
+            "127.0.0.1:0",
+            "--log-level",
+            "error",
+        ]);
+        if let Some(ref t) = temp {
+            cmd.env("LOCT_CACHE_DIR", t.path().join("cache"));
+        }
+        let mut child = cmd
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -434,6 +691,7 @@ impl HttpServer {
             child,
             addr,
             session_id: String::new(),
+            _cache_dir: temp,
         }
     }
 

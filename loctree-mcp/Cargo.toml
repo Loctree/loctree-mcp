@@ -7,6 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository = "https://github.com/Loctree/loctree-mcp"
 homepage = "https://loct.io"
+readme = "README.md"
 rust-version.workspace = true
 keywords = ["mcp", "loctree", "ai", "code-analysis", "agents"]
 categories = ["development-tools", "command-line-utilities"]
@@ -55,10 +56,8 @@ chrono = { workspace = true }
 shellexpand = { workspace = true }
 
 reqwest = { workspace = true }
-
-# Unix signal handling (for SIGPIPE)
-[target.'cfg(unix)'.dependencies]
-libc = "0.2"
+tempfile = "3"
+fs4 = "0.13"
 
 # Logging
 tracing = "0.1"
@@ -67,5 +66,10 @@ tracing-subscriber = { version = "0.3", features = ["fmt", "env-filter"] }
 # CLI
 clap = { version = "4", features = ["derive"] }
 
+# Unix signal handling (for SIGPIPE). Keep this target-specific table after
+# the cross-platform dependencies: TOML table scope persists until the next
+# header, so entries below it would otherwise silently become Unix-only.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
 [dev-dependencies]
-tempfile = "3"
