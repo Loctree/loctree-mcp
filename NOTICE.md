@@ -1,5 +1,5 @@
 # Notice
 
-This snapshot is published under BUSL-1.1.
+Published under BUSL-1.1. See `LICENSE` for the full text.
 
-This is a release mirror generated from the private integration monorepo. The snapshot contains only the component payload staged for `Loctree/loctree-mcp`.
+Third-party attributions and dependency licenses: see `licenses/`.
