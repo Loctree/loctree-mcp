@@ -1,4 +1,4 @@
-# Loctree MCP 0.15.0
+# Loctree MCP 0.15.1
 
 This repository is the public home of the Loctree MCP server.
 
